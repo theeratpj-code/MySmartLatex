@@ -3,23 +3,24 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://accounts.google.com/gsi/client; connect-src https://www.googleapis.com https://accounts.google.com/gsi/; frame-src https://accounts.google.com/gsi/; style-src 'self' https://accounts.google.com/gsi/style; img-src 'self' data:; font-src 'self'; base-uri 'none'; form-action 'none'">
+  <meta name="referrer" content="no-referrer">
+  <meta name="robots" content="noindex, nofollow">
   <title>My Smart Latex</title>
   <link rel="stylesheet" href="style.css">
-  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
   <header>
     <h1>My Smart Latex</h1>
-    <div id="user" hidden>
-      <span id="email"></span>
-      <button id="signout" type="button">Sign out</button>
-    </div>
+    <button id="signout" type="button" hidden>Sign out</button>
   </header>
 
   <main>
     <section id="login">
-      <p>Sign in with your Google account to view the bank transactions.</p>
-      <div id="g-button"></div>
+      <h2>Bank transactions</h2>
+      <p>Sign in with Google to read the transaction sheets. The data is loaded straight from your Google Drive into this page and is not stored anywhere.</p>
+      <button id="signin" class="primary" type="button" disabled>Sign in with Google</button>
+      <p id="login-msg" role="alert"></p>
     </section>
 
     <section id="app" hidden>
@@ -30,7 +31,9 @@
         <label>Sheet
           <select id="sheet"></select>
         </label>
-        <input id="filter" type="search" placeholder="Filter rows…">
+        <label class="grow">Filter
+          <input id="filter" type="search" placeholder="Search rows" autocomplete="off">
+        </label>
       </div>
       <p id="status" role="status"></p>
       <div class="table-wrap"><table id="table"></table></div>
@@ -38,6 +41,8 @@
   </main>
 
   <script src="config.js"></script>
+  <script src="vendor/xlsx.mini.min.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,0 +1,571 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>My Smart Latex Setup Guide</title>
+<meta name="description" content="Click-by-click, secure guide to put the My Smart Latex bank transaction viewer online using Google Drive.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --muted: #eaeff3;
+    --line: #e2e8f0;
+    --ink: #1e293b;
+    --ink-2: #475569;
+    --accent: #2563eb;
+    --accent-ink: #ffffff;
+    --accent-soft: #e3ecfd;
+    --warn: #92400e;
+    --warn-soft: #fdf0d5;
+    --ok: #166534;
+    --ok-soft: #dcf3e4;
+    --code-bg: #0f172a;
+    --code-ink: #e2e8f0;
+    --shadow: 0 1px 2px rgba(30, 41, 59, .06), 0 8px 24px rgba(30, 41, 59, .06);
+    --header-h: 64px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0b1220;
+      --surface: #131c2e;
+      --muted: #1b2740;
+      --line: #25324d;
+      --ink: #e5eaf2;
+      --ink-2: #a3b0c5;
+      --accent: #6ea4ff;
+      --accent-ink: #0b1220;
+      --accent-soft: #1a2b4f;
+      --warn: #f3c987;
+      --warn-soft: #3a2c12;
+      --ok: #8fdba8;
+      --ok-soft: #14301f;
+      --code-bg: #060b15;
+      --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .25);
+    }
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; scroll-padding-top: calc(var(--header-h) + 24px); }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font: 17px/1.65 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); text-underline-offset: 3px; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .skip { position: absolute; left: 12px; top: -60px; background: var(--accent); color: var(--accent-ink); padding: 10px 16px; border-radius: 8px; z-index: 50; }
+  .skip:focus { top: 12px; }
+  svg.i { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+
+  /* header */
+  header.top {
+    position: sticky; top: 0; z-index: 20; height: var(--header-h);
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+    padding: 0 clamp(16px, 3vw, 32px); background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(8px); box-shadow: 0 1px 0 var(--line);
+  }
+  .brand { font-weight: 700; letter-spacing: -0.02em; font-size: 1.05rem; }
+  .brand span { color: var(--ink-2); font-weight: 500; }
+  .meter { display: flex; align-items: center; gap: 12px; font-size: .9rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  .bar { width: clamp(90px, 18vw, 220px); height: 8px; background: var(--muted); border-radius: 99px; overflow: hidden; }
+  .bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .35s ease; }
+
+  /* layout */
+  .wrap { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 0; max-width: 1280px; margin: 0 auto; }
+  aside.toc { position: sticky; top: var(--header-h); height: calc(100vh - var(--header-h)); overflow-y: auto; padding: 32px 16px 32px clamp(16px, 3vw, 32px); }
+  .toc ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .toc a {
+    display: grid; grid-template-columns: 28px 1fr auto; gap: 10px; align-items: center;
+    padding: 10px 10px; color: var(--ink); text-decoration: none; border-radius: 10px; font-size: .95rem; line-height: 1.3;
+    transition: background .15s;
+  }
+  .toc a:hover { background: var(--muted); }
+  .toc a[aria-current="true"] { background: var(--accent-soft); }
+  .toc .dot { width: 28px; height: 28px; border-radius: 99px; background: var(--muted); display: grid; place-items: center; font-size: .8rem; font-weight: 600; color: var(--ink-2); }
+  .toc a.done .dot { background: var(--accent); color: var(--accent-ink); }
+  .toc .cnt { font-size: .8rem; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+
+  main { padding: 40px clamp(16px, 4vw, 56px) 96px 16px; min-width: 0; max-width: 860px; }
+
+  /* intro */
+  h1 { font-size: clamp(2.2rem, 5vw, 3.4rem); line-height: 1.05; letter-spacing: -0.035em; margin: 0 0 16px; text-wrap: balance; font-weight: 700; }
+  h2 { font-size: clamp(1.6rem, 3.2vw, 2.1rem); line-height: 1.15; letter-spacing: -0.025em; margin: 0; text-wrap: balance; font-weight: 700; }
+  h3 { font-size: 1.12rem; line-height: 1.35; margin: 0 0 6px; font-weight: 600; letter-spacing: -0.01em; }
+  p { margin: 0 0 14px; max-width: 66ch; text-wrap: pretty; }
+  .lead { font-size: 1.2rem; color: var(--ink-2); max-width: 52ch; }
+  .facts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 28px 0 8px; }
+  .fact { background: var(--surface); border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow); }
+  .fact b { display: block; font-size: 1.6rem; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+  .fact span { color: var(--ink-2); font-size: .92rem; }
+
+  .block { background: var(--surface); border-radius: 18px; padding: clamp(20px, 3vw, 32px); box-shadow: var(--shadow); margin-top: 24px; }
+  .block h2 { margin-bottom: 12px; }
+  .needs { list-style: none; padding: 0; margin: 12px 0 0; display: grid; gap: 10px; }
+  .needs li { display: flex; gap: 12px; align-items: flex-start; }
+  .needs svg { color: var(--accent); margin-top: 3px; }
+
+  .flow { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; gap: 10px; align-items: center; margin: 16px 0 12px; }
+  .flow .n { background: var(--muted); border-radius: 12px; padding: 14px 16px; }
+  .flow .n b { display: block; }
+  .flow .n span { font-size: .88rem; color: var(--ink-2); line-height: 1.4; display: block; }
+  .flow svg { color: var(--accent); }
+
+  /* steps */
+  section.step { margin-top: 72px; }
+  .step-head { display: flex; gap: 20px; align-items: flex-start; margin-bottom: 24px; }
+  .step-no { flex: none; width: 56px; height: 56px; border-radius: 16px; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 1.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .step-head p { color: var(--ink-2); margin: 8px 0 0; }
+  .time { display: inline-block; margin-top: 10px; background: var(--muted); color: var(--ink-2); padding: 4px 12px; border-radius: 99px; font-size: .85rem; font-weight: 500; }
+
+  ol.subs { list-style: none; margin: 0; padding: 0; counter-reset: sub; display: grid; gap: 14px; }
+  li.sub { position: relative; display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 16px; background: var(--surface); border-radius: 16px; padding: 20px 22px 8px 18px; box-shadow: var(--shadow); counter-increment: sub; transition: opacity .2s; }
+  li.sub:has(.tick:checked) { opacity: .62; }
+  li.sub:has(.tick:checked):hover, li.sub:has(.tick:checked):focus-within { opacity: 1; }
+  .tick { position: absolute; opacity: 0; width: 1px; height: 1px; }
+  .num {
+    width: 44px; height: 44px; border-radius: 99px; border: 2px solid var(--line); background: var(--bg);
+    display: grid; place-items: center; cursor: pointer; font-weight: 600; color: var(--ink-2);
+    transition: background .15s, border-color .15s, transform .1s; user-select: none;
+  }
+  .num::before { content: counter(sub); }
+  .num:hover { border-color: var(--accent); }
+  .num:active { transform: scale(.94); }
+  .tick:focus-visible + .num { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .tick:checked + .num { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .tick:checked + .num::before { content: "\2713"; font-size: 1.15rem; }
+  .sub .body { padding-bottom: 12px; min-width: 0; }
+  .sub .body > *:last-child { margin-bottom: 8px; }
+  .sub .path { display: inline-block; background: var(--muted); border-radius: 8px; padding: 2px 10px; font-weight: 500; font-size: .95rem; margin: 2px 0; }
+
+  code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .86em; background: var(--muted); padding: 2px 7px; border-radius: 6px; word-break: break-word; }
+  .code { position: relative; background: var(--code-bg); color: var(--code-ink); border-radius: 12px; margin: 10px 0 16px; }
+  .code pre { margin: 0; padding: 16px 84px 16px 18px; overflow-x: auto; font: .86rem/1.65 ui-monospace, "SF Mono", Menlo, Consolas, monospace; }
+  .code button { position: absolute; top: 8px; right: 8px; min-height: 36px; padding: 0 14px; background: rgba(255,255,255,.12); color: #fff; border: 0; border-radius: 8px; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; transition: background .15s; }
+  .code button:hover { background: rgba(255,255,255,.24); }
+  .code .ph { color: #fbbf77; }
+
+  .note { display: flex; gap: 12px; padding: 14px 16px; border-radius: 12px; margin: 12px 0 14px; font-size: .96rem; line-height: 1.55; max-width: 66ch; }
+  .note b { display: block; margin-bottom: 2px; }
+  .note svg { margin-top: 2px; }
+  .note.expect { background: var(--ok-soft); color: var(--ok); }
+  .note.tip { background: var(--accent-soft); color: var(--ink); }
+  .note.tip svg { color: var(--accent); }
+  .note.warn { background: var(--warn-soft); color: var(--warn); }
+  .note p { margin: 0 0 6px; max-width: none; }
+  .note > div > *:last-child { margin-bottom: 0; }
+
+  table.t { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: .94rem; }
+  .t th, .t td { text-align: left; padding: 10px 12px; vertical-align: top; }
+  .t th { background: var(--muted); font-weight: 600; }
+  .t th:first-child { border-radius: 8px 0 0 8px; } .t th:last-child { border-radius: 0 8px 8px 0; }
+  .t td { box-shadow: 0 1px 0 var(--line); }
+  .tablewrap { overflow-x: auto; }
+
+  details { background: var(--muted); border-radius: 12px; margin: 12px 0; }
+  details > summary { cursor: pointer; padding: 14px 18px; font-weight: 600; list-style: none; display: flex; justify-content: space-between; gap: 12px; align-items: center; border-radius: 12px; }
+  details > summary::-webkit-details-marker { display: none; }
+  details > summary::after { content: "+"; font-size: 1.4rem; line-height: 1; color: var(--accent); transition: transform .2s; }
+  details[open] > summary::after { transform: rotate(45deg); }
+  details > div { padding: 0 18px 8px; }
+
+  .done-card { margin-top: 72px; background: var(--accent); color: var(--accent-ink); border-radius: 22px; padding: clamp(24px, 4vw, 44px); }
+  .done-card h2 { color: inherit; margin-bottom: 10px; }
+  .done-card p { max-width: 54ch; }
+  .btn { display: inline-flex; align-items: center; min-height: 48px; padding: 0 22px; border-radius: 12px; background: var(--accent-ink); color: var(--accent); font-weight: 700; text-decoration: none; transition: transform .12s; }
+  .btn:hover { transform: translateY(-1px); } .btn:active { transform: translateY(1px); }
+
+  dl.gl { display: grid; gap: 14px; margin: 12px 0 0; }
+  dl.gl dt { font-weight: 600; }
+  dl.gl dd { margin: 2px 0 0; color: var(--ink-2); max-width: 64ch; }
+
+  footer { margin-top: 56px; color: var(--ink-2); font-size: .9rem; }
+
+  @media (max-width: 960px) {
+    .wrap { grid-template-columns: 1fr; }
+    aside.toc { position: sticky; top: var(--header-h); z-index: 15; height: auto; padding: 10px 16px; background: var(--bg); overflow: visible; box-shadow: 0 1px 0 var(--line); }
+    .toc ol { grid-auto-flow: column; grid-auto-columns: max-content; overflow-x: auto; }
+    .toc a { grid-template-columns: 24px auto; padding: 8px 10px; white-space: nowrap; }
+    .toc .dot { width: 24px; height: 24px; font-size: .75rem; }
+    .toc .cnt { display: none; }
+    main { padding: 28px 16px 72px; }
+    html { scroll-padding-top: calc(var(--header-h) + 72px); }
+  }
+  @media (max-width: 640px) {
+    body { font-size: 16px; }
+    .facts { grid-template-columns: 1fr; }
+    .flow { grid-template-columns: 1fr; }
+    .flow svg { transform: rotate(90deg); margin: 0 auto; }
+    li.sub { grid-template-columns: 36px minmax(0, 1fr); gap: 12px; padding: 16px 14px 6px 14px; }
+    .num { width: 36px; height: 36px; font-size: .9rem; }
+    .step-no { width: 46px; height: 46px; font-size: 1.25rem; border-radius: 13px; }
+    .step-head { gap: 14px; }
+    .meter span { display: none; }
+  }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.7 2.7L16 9.5"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3.5l9.5 16.5h-19z"/><path d="M12 10v4.5M12 17.4h.01"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></symbol>
+  <symbol id="i-dot" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></symbol>
+</svg>
+<a class="skip" href="#main">Skip to the guide</a>
+
+<header class="top">
+  <div class="brand">My Smart Latex <span>setup guide</span></div>
+  <div class="meter"><span id="meter-text">0 of 0 done</span><div class="bar" role="progressbar" aria-label="Setup progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="meter-bar"></i></div></div>
+</header>
+
+<div class="wrap">
+  <aside class="toc" aria-label="Steps">
+    <ol id="toc">
+      <li><a href="#start"><span class="dot">i</span><span>Before you start</span><span></span></a></li>
+      <li><a href="#s1" data-step="s1"><span class="dot">1</span><span>Lock down your accounts</span><span class="cnt"></span></a></li>
+      <li><a href="#s2" data-step="s2"><span class="dot">2</span><span>Put the files in Drive</span><span class="cnt"></span></a></li>
+      <li><a href="#s3" data-step="s3"><span class="dot">3</span><span>Google sign-in</span><span class="cnt"></span></a></li>
+      <li><a href="#s4" data-step="s4"><span class="dot">4</span><span>Publish the website</span><span class="cnt"></span></a></li>
+      <li><a href="#s5" data-step="s5"><span class="dot">5</span><span>Test it</span><span class="cnt"></span></a></li>
+      <li><a href="#safe"><span class="dot">S</span><span>How it is protected</span><span></span></a></li>
+      <li><a href="#fix"><span class="dot">?</span><span>If something goes wrong</span><span></span></a></li>
+      <li><a href="#words"><span class="dot">A</span><span>Plain-English glossary</span><span></span></a></li>
+    </ol>
+  </aside>
+
+  <main id="main">
+    <section id="start">
+      <h1>Put your bank sheets online, safely</h1>
+      <p class="lead">The website is written and uploaded. Your two Excel files will live in your private Google Drive, and the page reads them only after you sign in with Google.</p>
+      <div class="facts">
+        <div class="fact"><b>5 steps</b><span>Each one ends with a way to check it worked.</span></div>
+        <div class="fact"><b>about 30 minutes</b><span>No router, no certificates, nothing to install on the NAS.</span></div>
+        <div class="fact"><b>Free</b><span>Google Drive, Google Cloud and GitHub Pages all have free tiers that cover this.</span></div>
+      </div>
+
+      <div class="block">
+        <h2>What you are building</h2>
+        <p>You open a web page and sign in with Google. Google checks that it is really you and gives the page a short-lived, read-only pass to your Drive. The page downloads the two spreadsheets, shows them as tables, and forgets everything when you close it.</p>
+        <div class="flow">
+          <div class="n"><b>Web page</b><span>Hosted on GitHub Pages. Contains no data, only code.</span></div>
+          <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg>
+          <div class="n"><b>Google sign-in</b><span>Proves who you are and issues a one-hour read-only pass.</span></div>
+          <svg class="i" aria-hidden="true"><use href="#i-arrow"/></svg>
+          <div class="n"><b>Your Drive</b><span>Holds the two Excel files. Private to your account.</span></div>
+        </div>
+        <p>There is no server of your own to run or to attack. The only parts that matter for safety are your Google account, your GitHub account and the Drive sharing setting. Step 1 and the "How it is protected" section cover all three.</p>
+      </div>
+
+      <div class="block">
+        <h2>Have these ready</h2>
+        <ul class="needs">
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>The Google account <b>theerat.pp@gmail.com</b>, its password and your phone.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>Your GitHub login for <b>theeratpj-code</b> and your phone.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span>The two Excel files, <code>My Smart Bank transaction 2025  OK.xlsx</code> and <code>My Smart Bank transaction 2026.xlsx</code>, on this Mac or reachable from your NAS.</span></li>
+        </ul>
+        <div class="note tip"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div><b>How to use this page</b>Click a numbered circle when you finish a task. It turns into a tick, and your place is saved on this computer so you can close the page and come back.</div></div>
+      </div>
+    </section>
+
+    <!-- STEP 1 -->
+    <section class="step" id="s1" data-step="s1">
+      <div class="step-head"><div class="step-no">1</div><div><h2>Lock down your accounts</h2><p>With no server involved, these two accounts are the whole security of the project. Do this before anything else.</p><span class="time">About 10 minutes</span></div></div>
+      <ol class="subs">
+        <li class="sub"><input class="tick" type="checkbox" id="t-1-1"><label class="num" for="t-1-1"><span class="sr">Mark task 1.1 done</span></label>
+          <div class="body"><h3>Delete the leaked GitHub token</h3>
+            <p>You pasted a GitHub token into the chat. Go to <a href="https://github.com/settings/tokens" target="_blank" rel="noopener">github.com/settings/tokens</a>, open the token that starts with <code>ghp_</code>, press the red <b>Delete</b> button and confirm. Check both the "Fine-grained" and "Tokens (classic)" lists.</p>
+            <div class="note expect"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><div><b>You should see</b>No token left in either list.</div></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-1-2"><label class="num" for="t-1-2"><span class="sr">Mark task 1.2 done</span></label>
+          <div class="body"><h3>Turn on 2-Step Verification for GitHub</h3>
+            <p>Go to <a href="https://github.com/settings/security" target="_blank" rel="noopener">github.com/settings/security</a> and, under <b>Two-factor authentication</b>, click <b>Enable</b>. A passkey or an authenticator app is stronger than text messages.</p>
+            <p>Whoever can log in to your GitHub can change the website's code. That is the single most valuable thing an attacker could take over here, so this task matters most.</p></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-1-3"><label class="num" for="t-1-3"><span class="sr">Mark task 1.3 done</span></label>
+          <div class="body"><h3>Turn on 2-Step Verification for Google</h3>
+            <p>Go to <a href="https://myaccount.google.com/signinoptions/two-step-verification" target="_blank" rel="noopener">myaccount.google.com</a> for <code>theerat.pp@gmail.com</code> and make sure 2-Step Verification is <b>On</b>. Add a passkey if you can.</p>
+            <p>Also open <a href="https://myaccount.google.com/security-checkup" target="_blank" rel="noopener">the Security Checkup</a>, sign out of devices you do not recognise, and keep your recovery phone and email current.</p></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-1-4"><label class="num" for="t-1-4"><span class="sr">Mark task 1.4 done</span></label>
+          <div class="body"><h3>Use a password that exists nowhere else</h3>
+            <p>Both accounts need long passwords that you use for nothing else. A password manager (for example the one built into your browser or Apple's Passwords app) makes that painless.</p></div></li>
+      </ol>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="step" id="s2" data-step="s2">
+      <div class="step-head"><div class="step-no">2</div><div><h2>Put the files in Google Drive</h2><p>The page can only read what is in your Drive, and only after you sign in. Keep the files private, then note each file's ID.</p><span class="time">About 10 minutes</span></div></div>
+      <ol class="subs">
+        <li class="sub"><input class="tick" type="checkbox" id="t-2-1"><label class="num" for="t-2-1"><span class="sr">Mark task 2.1 done</span></label>
+          <div class="body"><h3>Upload the two Excel files</h3>
+            <p>Open <a href="https://drive.google.com" target="_blank" rel="noopener">drive.google.com</a> as <code>theerat.pp@gmail.com</code>. Click <b>New</b> then <b>New folder</b> and name it <code>My Smart Latex</code>. Open the folder and drag both Excel files into it.</p>
+            <div class="note tip"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div><b>Files on the NAS?</b>Download them from File Station to your Mac first (right-click, then Download). Later you can automate this with the Synology "Cloud Sync" package; see the note at the end of step 5.</div></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-2-2"><label class="num" for="t-2-2"><span class="sr">Mark task 2.2 done</span></label>
+          <div class="body"><h3>Make sure nothing is shared</h3>
+            <p>Right-click each file, choose <b>Share</b>, and look at <b>General access</b>. It must say <b>Restricted</b>, and the only person listed must be you.</p>
+            <div class="note warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg><div><b>Never use "Anyone with the link"</b>That would let any person with the link read your bank data, no sign-in needed.</div></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-2-3"><label class="num" for="t-2-3"><span class="sr">Mark task 2.3 done</span></label>
+          <div class="body"><h3>Copy the ID of the 2025 file</h3>
+            <p>Double-click the 2025 file to open its preview, then look at the address bar. It looks like this:</p>
+            <div class="code"><pre>https://drive.google.com/file/d/<span class="ph">1AbCdEfGhIjKlMnOpQrStUvWxYz</span>/view</pre><button type="button" data-copy>Copy</button></div>
+            <p>The highlighted part between <code>/d/</code> and <code>/view</code> is the file ID. Copy it into a note and label it "2025".</p></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-2-4"><label class="num" for="t-2-4"><span class="sr">Mark task 2.4 done</span></label>
+          <div class="body"><h3>Copy the ID of the 2026 file</h3>
+            <p>Do the same for the 2026 file and label it "2026". Keep both IDs for step 4.</p>
+            <div class="note tip"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div><b>A file ID is not a secret</b>On its own it opens nothing. Google still checks who you are and refuses anyone but you.</div></div></div></li>
+      </ol>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="step" id="s3" data-step="s3">
+      <div class="step-head"><div class="step-no">3</div><div><h2>Set up the Google sign-in</h2><p>This gives the website a <b>Client ID</b>, a public name tag that tells Google which website is asking. It also limits who can ever sign in to this app.</p><span class="time">About 10 minutes</span></div></div>
+      <ol class="subs">
+        <li class="sub"><input class="tick" type="checkbox" id="t-3-1"><label class="num" for="t-3-1"><span class="sr">Mark task 3.1 done</span></label>
+          <div class="body"><h3>Create a project</h3>
+            <p>Open <a href="https://console.cloud.google.com" target="_blank" rel="noopener">console.cloud.google.com</a> as <code>theerat.pp@gmail.com</code> and accept the terms if asked. Click the project name at the top left, then <b>New project</b>. Name it <code>My Smart Latex</code>, click <b>Create</b>, and make sure it is the selected project.</p></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-3-2"><label class="num" for="t-3-2"><span class="sr">Mark task 3.2 done</span></label>
+          <div class="body"><h3>Turn on the Google Drive API</h3>
+            <p>Click the menu icon (three lines), then <span class="path">APIs &amp; Services</span> then <span class="path">Library</span>. Search for <code>Google Drive API</code>, open it and click <b>Enable</b>.</p>
+            <div class="note expect"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><div><b>You should see</b>A dashboard for "Google Drive API" with a green status.</div></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-3-3"><label class="num" for="t-3-3"><span class="sr">Mark task 3.3 done</span></label>
+          <div class="body"><h3>Set up the consent screen</h3>
+            <p>Open <span class="path">APIs &amp; Services</span> then <span class="path">OAuth consent screen</span> (Google also calls this "Google Auth Platform") and click <b>Get started</b>.</p>
+            <ol>
+              <li><b>App information:</b> name <code>My Smart Latex</code>, support email <code>theerat.pp@gmail.com</code>. Click <b>Next</b>.</li>
+              <li><b>Audience:</b> choose <b>External</b>. Click <b>Next</b>.</li>
+              <li><b>Contact information:</b> your email. Click <b>Next</b>.</li>
+              <li><b>Finish:</b> tick the agreement, click <b>Continue</b>, then <b>Create</b>.</li>
+            </ol></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-3-4"><label class="num" for="t-3-4"><span class="sr">Mark task 3.4 done</span></label>
+          <div class="body"><h3>Allow only yourself</h3>
+            <p>In the left menu click <b>Audience</b>. Make sure the publishing status says <b>Testing</b>. Under <b>Test users</b> click <b>Add users</b>, type <code>theerat.pp@gmail.com</code> and click <b>Save</b>.</p>
+            <div class="note warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg><div><b>Do not press "Publish app"</b>In Testing mode, Google itself refuses every account that is not on this list. Publishing would open the sign-in screen to everyone.</div></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-3-5"><label class="num" for="t-3-5"><span class="sr">Mark task 3.5 done</span></label>
+          <div class="body"><h3>Choose the read-only permission</h3>
+            <p>In the left menu click <b>Data Access</b>, then <b>Add or remove scopes</b>. Find <code>.../auth/drive.readonly</code> ("See and download all your Google Drive files"), tick it, and click <b>Update</b> then <b>Save</b>.</p>
+            <p>Read-only means the page can never change or delete anything in your Drive.</p></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-3-6"><label class="num" for="t-3-6"><span class="sr">Mark task 3.6 done</span></label>
+          <div class="body"><h3>Create the Client ID</h3>
+            <p>In the left menu click <b>Clients</b>, then <b>Create client</b>. Set <b>Application type</b> to <b>Web application</b> and the name to <code>My Smart Latex web</code>.</p>
+            <p>Under <b>Authorized JavaScript origins</b> click <b>Add URI</b> and paste exactly:</p>
+            <div class="code"><pre>https://theeratpj-code.github.io</pre><button type="button" data-copy>Copy</button></div>
+            <div class="note warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg><div><b>No slash and no page name</b>Do not add <code>/</code> or <code>/MySmartLatex</code>. Leave "Authorized redirect URIs" empty. Click <b>Create</b>.</div></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-3-7"><label class="num" for="t-3-7"><span class="sr">Mark task 3.7 done</span></label>
+          <div class="body"><h3>Copy the Client ID</h3>
+            <p>A window shows a long Client ID ending in <code>.apps.googleusercontent.com</code>. Copy it into your note. You do not need the "Client secret" and should never paste it anywhere.</p></div></li>
+      </ol>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="step" id="s4" data-step="s4">
+      <div class="step-head"><div class="step-no">4</div><div><h2>Publish the website</h2><p>You will fill in the three blanks in the settings file and switch on GitHub Pages. Both are done in your browser.</p><span class="time">About 5 minutes plus a short wait</span></div></div>
+      <ol class="subs">
+        <li class="sub"><input class="tick" type="checkbox" id="t-4-1"><label class="num" for="t-4-1"><span class="sr">Mark task 4.1 done</span></label>
+          <div class="body"><h3>Open the settings file</h3>
+            <p>Go to <a href="https://github.com/theeratpj-code/MySmartLatex/blob/main/docs/config.js" target="_blank" rel="noopener">config.js on GitHub</a>, sign in, and click the pencil icon at the top right of the file.</p></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-4-2"><label class="num" for="t-4-2"><span class="sr">Mark task 4.2 done</span></label>
+          <div class="body"><h3>Fill in the three values</h3>
+            <p>Replace the three <code>PASTE_</code> values with your Client ID and the two file IDs from your note. Leave everything else as it is.</p>
+            <div class="code"><pre>window.APP_CONFIG = {
+  GOOGLE_CLIENT_ID: "<span class="ph">YOUR-CLIENT-ID</span>.apps.googleusercontent.com",
+  LOGIN_HINT: "theerat.pp@gmail.com",
+  IDLE_MINUTES: 15,
+  FILES: [
+    { label: "2025", id: "<span class="ph">FILE-ID-2025</span>" },
+    { label: "2026", id: "<span class="ph">FILE-ID-2026</span>" },
+  ],
+};</pre><button type="button" data-copy>Copy</button></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-4-3"><label class="num" for="t-4-3"><span class="sr">Mark task 4.3 done</span></label>
+          <div class="body"><h3>Save the change</h3>
+            <p>Click the green <b>Commit changes...</b> button, keep <b>Commit directly to the main branch</b> selected, and click <b>Commit changes</b> again.</p></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-4-4"><label class="num" for="t-4-4"><span class="sr">Mark task 4.4 done</span></label>
+          <div class="body"><h3>Turn on GitHub Pages</h3>
+            <p>Open <a href="https://github.com/theeratpj-code/MySmartLatex/settings/pages" target="_blank" rel="noopener">the repository's Pages settings</a>. Under <b>Build and deployment</b> set <b>Source</b> to <b>Deploy from a branch</b>, pick branch <code>main</code> and folder <code>/docs</code>, and click <b>Save</b>.</p>
+            <div class="note warn"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg><div><b>Pages greyed out?</b>Free GitHub plans publish Pages only from public repositories. That is fine here: the repository holds code only, with no bank data. Change it under Settings, then General, at the bottom.</div></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-4-5"><label class="num" for="t-4-5"><span class="sr">Mark task 4.5 done</span></label>
+          <div class="body"><h3>Wait for it to go live</h3>
+            <p>Refresh the Pages settings after a minute or two.</p>
+            <div class="note expect"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><div><b>You should see</b>A banner: "Your site is live at https://theeratpj-code.github.io/MySmartLatex/".</div></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-4-6"><label class="num" for="t-4-6"><span class="sr">Mark task 4.6 done</span></label>
+          <div class="body"><h3>Protect the code from accidental or hostile edits</h3>
+            <p>In the repository open <b>Settings</b> then <b>Rules</b> then <b>Rulesets</b> and click <b>New ruleset</b>, <b>New branch ruleset</b>. Name it <code>protect main</code>, set Enforcement to <b>Active</b>, add the target <b>Default branch</b>, and tick <b>Restrict deletions</b> and <b>Block force pushes</b>. Click <b>Create</b>.</p>
+            <p>Together with 2-Step Verification (task 1.2) this makes it much harder for anyone to slip in code that steals your Google pass.</p></div></li>
+      </ol>
+    </section>
+
+    <!-- STEP 5 -->
+    <section class="step" id="s5" data-step="s5">
+      <div class="step-head"><div class="step-no">5</div><div><h2>Test it</h2><p>One run-through to confirm every link works and the permissions look right.</p><span class="time">About 5 minutes</span></div></div>
+      <ol class="subs">
+        <li class="sub"><input class="tick" type="checkbox" id="t-5-1"><label class="num" for="t-5-1"><span class="sr">Mark task 5.1 done</span></label>
+          <div class="body"><h3>Open the site</h3>
+            <p>Visit <a href="https://theeratpj-code.github.io/MySmartLatex/" target="_blank" rel="noopener">theeratpj-code.github.io/MySmartLatex</a>.</p>
+            <div class="note expect"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><div><b>You should see</b>"Bank transactions" and a <b>Sign in with Google</b> button.</div></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-5-2"><label class="num" for="t-5-2"><span class="sr">Mark task 5.2 done</span></label>
+          <div class="body"><h3>Sign in and read the permission screen</h3>
+            <p>Click the button and choose <code>theerat.pp@gmail.com</code>. Google may say it has not verified the app. That is expected in Testing mode; click <b>Advanced</b> and then <b>Go to My Smart Latex</b>.</p>
+            <p>Read the next screen before you click <b>Continue</b>. It must ask only to <b>"See and download all your Google Drive files"</b>. If it offers anything that says edit, create or delete, stop and go back to task 3.5.</p></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-5-3"><label class="num" for="t-5-3"><span class="sr">Mark task 5.3 done</span></label>
+          <div class="body"><h3>Read your data</h3>
+            <p>A table should appear. Switch between <b>2025</b> and <b>2026</b>, pick a sheet, and type in the filter box.</p>
+            <div class="note expect"><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><div><b>You should see</b>Rows from your Excel files and a count such as "120 of 120 rows".</div></div></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-5-4"><label class="num" for="t-5-4"><span class="sr">Mark task 5.4 done</span></label>
+          <div class="body"><h3>Sign out and check access is gone</h3>
+            <p>Click <b>Sign out</b>. The table disappears and the page withdraws its Drive pass. Reload the page: you are asked to sign in again.</p></div></li>
+        <li class="sub"><input class="tick" type="checkbox" id="t-5-5"><label class="num" for="t-5-5"><span class="sr">Mark task 5.5 done</span></label>
+          <div class="body"><h3>Check from a private window</h3>
+            <p>Open the address in a private or incognito window on another device. You should see only the sign-in button and no data, even though the website is public.</p></div></li>
+      </ol>
+
+      <div class="done-card">
+        <h2>Finished</h2>
+        <p>Your bank sheets are readable only after a Google sign-in, and only by you. When you replace a file in Drive with a new version, the site shows the new rows the next time you open it.</p>
+        <a class="btn" href="https://theeratpj-code.github.io/MySmartLatex/" target="_blank" rel="noopener">Open the site</a>
+      </div>
+
+      <details style="margin-top:24px">
+        <summary>Optional: keep Drive in sync with the NAS automatically</summary>
+        <div>
+          <p>The Synology <b>Cloud Sync</b> package can copy files from the NAS to Google Drive whenever they change.</p>
+          <ol>
+            <li>In Package Center install <b>Cloud Sync</b> and open it.</li>
+            <li>Click <b>+</b>, choose <b>Google Drive</b>, and sign in as <code>theerat.pp@gmail.com</code>.</li>
+            <li>Set <b>Sync direction</b> to <b>Upload local changes only</b>, so nothing in Drive can ever change files on the NAS.</li>
+            <li>Choose a local folder that holds <b>only</b> the two Excel files. Everything in the chosen folder is copied to Google, so do not point it at a folder with other files.</li>
+          </ol>
+          <p>Synced files get new Drive file IDs, so redo tasks 2.3, 2.4 and 4.2 with the synced copies.</p>
+        </div>
+      </details>
+    </section>
+
+    <!-- SAFETY -->
+    <section class="step" id="safe">
+      <div class="step-head"><div class="step-no">S</div><div><h2>How it is protected</h2><p>No system can promise to be unhackable, and anyone who says so is wrong. This setup removes the usual weak points and leaves a short list of things you control.</p></div></div>
+      <div class="block" style="margin-top:0">
+        <h3>What is built in</h3>
+        <ul class="needs">
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>No server of yours.</b> Nothing is open to the internet except a static page, so there is no login form, database or open port to attack.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>The data never touches GitHub.</b> The repository holds code only, and Excel files are on the ignore list.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Google does the checking.</b> Only your account can authorise the app (Testing mode), and the files are private in Drive, so Google refuses everyone else.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Read-only pass.</b> The page can only read. It cannot edit or delete anything.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Short life.</b> The pass lasts about an hour, is held in memory only (never saved to the browser), is withdrawn at sign-out, and the page signs you out after 15 idle minutes.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Strict page rules.</b> A content security policy lets the page talk only to Google and itself, and blocks inline scripts. The spreadsheet library is stored with the site rather than loaded from a third party.</span></li>
+          <li><svg class="i" aria-hidden="true"><use href="#i-check"/></svg><span><b>Safe display.</b> Spreadsheet cells are shown as plain text, so a booby-trapped cell cannot run code. Only files owned by your account are opened.</span></li>
+        </ul>
+      </div>
+      <div class="block">
+        <h3>What can still go wrong, and what to do</h3>
+        <div class="tablewrap"><table class="t"><thead><tr><th>Risk</th><th>What reduces it</th></tr></thead><tbody>
+          <tr><td>Someone takes over your Google account</td><td>2-Step Verification or a passkey (task 1.3), a unique password, regular Security Checkups.</td></tr>
+          <tr><td>Someone takes over your GitHub account and edits the page's code</td><td>2-Step Verification (task 1.2), the branch ruleset (task 4.6), never pasting tokens into chats. Review the commit list on GitHub now and then.</td></tr>
+          <tr><td>A file in Drive is shared by mistake</td><td>Keep General access on "Restricted" (task 2.2). Check the Share dialog occasionally.</td></tr>
+          <tr><td>You sign in on a shared or infected computer</td><td>Use only your own devices, and sign out when done.</td></tr>
+          <tr><td>A fake copy of the site tricks you</td><td>Always open the exact address <code>theeratpj-code.github.io/MySmartLatex</code> and read the permission screen: it must say read-only.</td></tr>
+        </tbody></table></div>
+        <div class="note tip"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div><b>Review access every few months</b>Open <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener">myaccount.google.com/permissions</a>. "My Smart Latex" should be the only app with Drive access that you recognise. Remove anything else.</div></div>
+        <div class="note tip"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg><div><b>Want it stricter still?</b>The page currently asks to read your whole Drive. A narrower version can limit it to just these two files by using a file picker. It needs a few more setup clicks. Ask and I will add it.</div></div>
+      </div>
+    </section>
+
+    <!-- TROUBLESHOOTING -->
+    <section class="step" id="fix">
+      <div class="step-head"><div class="step-no">?</div><div><h2>If something goes wrong</h2><p>Find the message you see and follow the fix.</p></div></div>
+      <details><summary>The page says "This site is not set up yet"</summary><div>
+        <p>A <code>PASTE_</code> value is still in <code>config.js</code>, or an ID has a typo or a space. Redo task 4.2 and wait a minute for GitHub to update.</p></div></details>
+      <details><summary>The Sign in button is greyed out</summary><div>
+        <p>Google's sign-in script has not loaded. Check your internet connection and that no ad blocker is blocking <code>accounts.google.com</code>, then reload.</p></div></details>
+      <details><summary>Google says "Error 400: origin_mismatch" or "invalid_client"</summary><div>
+        <p>The origin in task 3.6 must be exactly <code>https://theeratpj-code.github.io</code> with no slash and no page name, and the Client ID in <code>config.js</code> must be the one from the same project. Changes can take a few minutes to apply.</p></div></details>
+      <details><summary>Google says "Access blocked: has not completed the verification process"</summary><div>
+        <p>Your email is not on the test user list. Repeat task 3.4 and add <code>theerat.pp@gmail.com</code>.</p></div></details>
+      <details><summary>The page says "Google refused access"</summary><div>
+        <p>The Drive API is probably not enabled (task 3.2) or you approved the sign-in without the Drive permission. Click Sign out, then sign in again and allow the Drive permission.</p></div></details>
+      <details><summary>The page says "File not found in Drive"</summary><div>
+        <p>A file ID in <code>config.js</code> is wrong, or you signed in with a different Google account from the one that owns the files. Redo tasks 2.3, 2.4 and 4.2.</p></div></details>
+      <details><summary>The page says the file "is not owned by your Google account"</summary><div>
+        <p>The page deliberately refuses files that someone else owns. Upload your own copy to your Drive (task 2.1) and use that file's ID.</p></div></details>
+      <details><summary>The page says "not an Excel or Google Sheets file"</summary><div>
+        <p>The ID points at a different kind of file (for example a PDF or a folder). Open the correct Excel file and copy its ID again.</p></div></details>
+      <details><summary>I changed the file in Drive but the page shows old rows</summary><div>
+        <p>Click Sign out and sign in again, or reload the page. The page downloads the file fresh each time and keeps nothing.</p></div></details>
+    </section>
+
+    <!-- GLOSSARY -->
+    <section class="step" id="words">
+      <div class="step-head"><div class="step-no">A</div><div><h2>Plain-English glossary</h2></div></div>
+      <div class="block" style="margin-top:0">
+        <dl class="gl">
+          <div><dt>Client ID</dt><dd>A public label that tells Google which website is asking for a login. It is not a password.</dd></div>
+          <div><dt>File ID</dt><dd>The code in a Drive file's address that identifies the file. It opens nothing for people Google has not approved.</dd></div>
+          <div><dt>Testing mode</dt><dd>A Google setting where only people on your test list can sign in to your app.</dd></div>
+          <div><dt>Read-only permission</dt><dd>A pass that lets the page look at files and download them, but never change or delete them.</dd></div>
+          <div><dt>2-Step Verification</dt><dd>A second proof, such as a code or a phone prompt, needed in addition to your password.</dd></div>
+          <div><dt>Content security policy</dt><dd>A rule list built into the page that tells the browser which other sites the page may contact.</dd></div>
+          <div><dt>GitHub Pages</dt><dd>GitHub's free service that publishes a folder of files as a website.</dd></div>
+        </dl>
+      </div>
+      <footer>Your progress is stored in this browser only. Clear your browser data and the ticks reset.</footer>
+    </section>
+  </main>
+</div>
+
+<script>
+(function () {
+  var KEY = "msl-guide-v3";
+  var ticks = Array.prototype.slice.call(document.querySelectorAll(".tick"));
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}"); } catch (e) {}
+
+  var steps = Array.prototype.map.call(document.querySelectorAll("section.step[data-step]"), function (s) { return s.id; });
+
+  function update() {
+    var done = ticks.filter(function (t) { return t.checked; }).length;
+    var pct = ticks.length ? Math.round(done / ticks.length * 100) : 0;
+    document.getElementById("meter-text").textContent = done + " of " + ticks.length + " done";
+    document.getElementById("meter-bar").style.width = pct + "%";
+    document.querySelector(".bar").setAttribute("aria-valuenow", pct);
+
+    steps.forEach(function (id) {
+      var sec = document.getElementById(id);
+      var boxes = sec.querySelectorAll(".tick");
+      var n = Array.prototype.filter.call(boxes, function (b) { return b.checked; }).length;
+      var link = document.querySelector('.toc a[data-step="' + id + '"]');
+      link.querySelector(".cnt").textContent = n + "/" + boxes.length;
+      link.classList.toggle("done", n === boxes.length && boxes.length > 0);
+    });
+
+    var state = {};
+    ticks.forEach(function (t) { if (t.checked) state[t.id] = 1; });
+    try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {}
+  }
+
+  ticks.forEach(function (t) { t.checked = !!saved[t.id]; t.addEventListener("change", update); });
+  update();
+
+  document.querySelectorAll("[data-copy]").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      var text = btn.parentNode.querySelector("pre").textContent;
+      var ok = function () { btn.textContent = "Copied"; setTimeout(function () { btn.textContent = "Copy"; }, 1400); };
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(ok, function () {});
+    });
+  });
+
+  var links = Array.prototype.slice.call(document.querySelectorAll(".toc a"));
+  var targets = links.map(function (a) { return document.querySelector(a.getAttribute("href")); });
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) {
+          links.forEach(function (a) { a.removeAttribute("aria-current"); });
+          links[targets.indexOf(e.target)].setAttribute("aria-current", "true");
+        }
+      });
+    }, { rootMargin: "-20% 0px -70% 0px" });
+    targets.forEach(function (t) { io.observe(t); });
+  }
+})();
+</script>
+</body>
+</html>

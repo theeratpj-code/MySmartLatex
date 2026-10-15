@@ -1,0 +1,12 @@
+# Only docs/, README.md and this file are published. Everything else stays on this Mac.
+uploader/
+setup-guide.html
+*.xlsx
+*.json
+!docs/**/*.json
+token.json
+client_secret*.json
+.env
+venv/
+__pycache__/
+.DS_Store

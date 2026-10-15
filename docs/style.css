@@ -246,6 +246,8 @@ h2 { font-size: 1.1rem; font-weight: 600; letter-spacing: -0.02em; margin: 0; }
 .rc-amt { font-family: var(--mono); font-weight: 500; font-size: .9rem; white-space: nowrap; }
 .rc-in .rc-amt { color: var(--pos); } .rc-out .rc-amt { color: var(--neg); }
 
+.chart-head { margin: 6px 0 8px; }
+.sub-h { font-size: .92rem; font-weight: 500; color: var(--ink-2); margin: 0; letter-spacing: -0.01em; }
 .latex-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
 .s-val { font-size: 1.25rem; font-weight: 500; letter-spacing: -0.02em; font-family: var(--mono); display: block; overflow-wrap: anywhere; }
 

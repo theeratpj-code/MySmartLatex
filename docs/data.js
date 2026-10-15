@@ -50,8 +50,9 @@
     return out;
   }
 
-  // Column J is also used for other numbers, so a purchase needs weight, dry weight and price.
-  function isLatex(t) { return t.latexKg > 0 && t.dryKg > 0 && t.price > 0; }
+  // Moreganic rows are found by the Description only (also matches the "Morganic" spelling, any case).
+  var MG_RE = /more?ganic/i;
+  function isMoreganic(t) { return MG_RE.test(t.desc); }
 
   function years(tx) {
     var seen = {};
@@ -100,14 +101,14 @@
     list.forEach(function (t) {
       if (t.month < min) min = t.month;
       if (t.month > max) max = t.month;
-      var row = map[t.month] || (map[t.month] = { inn: 0, out: 0, latexKg: 0, dryKg: 0, spend: 0 });
+      var row = map[t.month] || (map[t.month] = { inn: 0, out: 0, mg: 0 });
       row.inn += t.inAmt; row.out += t.outAmt;
-      if (isLatex(t)) { row.latexKg += t.latexKg; row.dryKg += t.dryKg; row.spend += t.total; }
+      if (isMoreganic(t)) row.mg += t.outAmt;
     });
     var res = [];
     for (var m = min; m <= max; m = nextMonth(m)) {
-      var r = map[m] || { inn: 0, out: 0, latexKg: 0, dryKg: 0, spend: 0 };
-      res.push({ month: m, label: monthLabel(m), inn: r.inn, out: r.out, latexKg: r.latexKg, dryKg: r.dryKg, spend: r.spend });
+      var r = map[m] || { inn: 0, out: 0, mg: 0 };
+      res.push({ month: m, label: monthLabel(m), inn: r.inn, out: r.out, mg: r.mg });
     }
     return res;
   }
@@ -137,16 +138,17 @@
       .sort(function (a, b) { return b.value - a.value; }).slice(0, n);
   }
 
-  function latex(list) {
-    var kg = 0, dry = 0, spend = 0, n = 0;
+  // Everything paid to or for Moreganic: rows whose Description mentions it.
+  function moreganic(list) {
+    var n = 0, total = 0, max = 0, last = "", allOut = 0;
     list.forEach(function (t) {
-      if (isLatex(t)) { kg += t.latexKg; dry += t.dryKg; spend += t.total; n++; }
+      allOut += t.outAmt;
+      if (!isMoreganic(t)) return;
+      n++; total += t.outAmt;
+      if (t.outAmt > max) max = t.outAmt;
+      if (t.date > last) last = t.date;
     });
-    return {
-      count: n, wetKg: kg, dryKg: dry, spend: spend,
-      drc: kg ? dry / kg * 100 : null,
-      avgPrice: dry ? spend / dry : null
-    };
+    return { count: n, total: total, avg: n ? total / n : null, max: max, last: last || null, share: allOut ? total / allOut * 100 : null };
   }
 
   function sortRows(list, key, dir) {
@@ -175,7 +177,7 @@
 
   root.MSL = {
     parse: parse, years: years, filter: filter, kpis: kpis, monthly: monthly,
-    balanceSeries: balanceSeries, topParties: topParties, latex: latex, sortRows: sortRows,
+    balanceSeries: balanceSeries, topParties: topParties, moreganic: moreganic, sortRows: sortRows,
     fmtMoney: fmtMoney, fmtShort: fmtShort, monthLabel: monthLabel, lastBalance: lastBalance
   };
 })(typeof window !== "undefined" ? window : this);

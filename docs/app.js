@@ -152,7 +152,7 @@
     $("app").hidden = true; $("login").hidden = false;
     ["signout", "refresh", "updated"].forEach(function (id) { $(id).hidden = true; });
     $("table").replaceChildren(); $("recent").replaceChildren(); $("stream").replaceChildren();
-    ["ch-monthly", "ch-balance", "ch-latex", "top-in", "top-out", "spark"].forEach(function (id) { $(id).replaceChildren(); });
+    ["ch-monthly", "ch-balance", "ch-mg", "top-in", "top-out", "spark"].forEach(function (id) { $(id).replaceChildren(); });
     ["k-bal", "k-in", "k-out", "k-net"].forEach(function (id) { $(id)._v = null; $(id).textContent = "-"; });
     $("q").value = ""; state.q = ""; state.page = 0; state.month = null; state.year = "all";
     $("error").hidden = true; $("dash").hidden = false;
@@ -183,18 +183,30 @@
   }
 
   // ---- loading -----------------------------------------------------------
-  function sheetsGet() {
-    var url = API + encodeURIComponent(cfg.SHEET_ID) + "/values:batchGet?valueRenderOption=UNFORMATTED_VALUE" +
-      "&ranges=" + encodeURIComponent(cfg.DATA_TAB + "!A:R") + "&ranges=" + encodeURIComponent(cfg.META_TAB + "!A:B");
+  function authFetch(url) {
     return fetch(url, { headers: { Authorization: "Bearer " + token }, cache: "no-store", referrerPolicy: "no-referrer" })
       .then(function (res) {
         if (res.status === 401) { signOut("Your session expired. Please sign in again."); throw new Error("expired"); }
-        if (res.status === 403) throw new Error("Google refused access. Turn on the Google Sheets API for the project, and sign in with the account that owns the sheet.");
+        if (res.status === 403) throw new Error("Google would not let this account read the sheet. Ask the owner to add your email to the Viewers tab, and check the Google Sheets API is on.");
         if (res.status === 404) throw new Error("Sheet not found. Check SHEET_ID in config.js.");
-        if (res.status === 400) throw new Error("The sheet needs tabs named " + cfg.DATA_TAB + " and " + cfg.META_TAB + ". Run the uploader once.");
+        if (res.status === 400) throw new Error("The sheet's tabs could not be read. Run the uploader once.");
         if (!res.ok) throw new Error("Google Sheets error (" + res.status + ").");
         return res.json();
       });
+  }
+
+  // 1) list the tabs, 2) read every year tab (named 2024, 2025, ...) plus Meta, so a new year needs no change here
+  function sheetsGet() {
+    var base = API + encodeURIComponent(cfg.SHEET_ID);
+    return authFetch(base + "?fields=sheets.properties.title").then(function (info) {
+      var years = (info.sheets || []).map(function (s) { return s.properties.title; })
+        .filter(function (t) { return /^\d{4}$/.test(t); }).sort();
+      if (!years.length) throw new Error("The sheet has no year tabs yet. Run the uploader once.");
+      var qs = "valueRenderOption=UNFORMATTED_VALUE" +
+        years.map(function (y) { return "&ranges=" + encodeURIComponent("'" + y + "'!A:R"); }).join("") +
+        "&ranges=" + encodeURIComponent(cfg.META_TAB + "!A:B");
+      return authFetch(base + "/values:batchGet?" + qs).then(function (data) { return { years: years, data: data }; });
+    });
   }
 
   function showError(msg) {
@@ -212,12 +224,15 @@
     $("updated").hidden = false; $("updated").classList.add("busy");
     $("updated-text").textContent = "Loading from Google Sheets";
     setStatus("");
-    sheetsGet().then(function (data) {
+    sheetsGet().then(function (res) {
       if (seq !== loadSeq || !token) return;
-      var vr = data.valueRanges || [];
-      allTx = MSL.parse((vr[0] && vr[0].values) || []);
+      var vr = res.data.valueRanges || [];
+      allTx = [];
+      res.years.forEach(function (y, i) {
+        MSL.parse((vr[i] && vr[i].values) || []).forEach(function (t) { t.id += i * 1000000; allTx.push(t); });
+      });
       var meta = {};
-      ((vr[1] && vr[1].values) || []).forEach(function (r) { meta[r[0]] = r[1]; });
+      ((vr[res.years.length] && vr[res.years.length].values) || []).forEach(function (r) { meta[r[0]] = r[1]; });
       var d = meta.Updated ? new Date(meta.Updated) : null;
       $("updated-text").textContent = d && !isNaN(d) ? "Data updated " + d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Connected";
       $("updated").classList.remove("busy");
@@ -364,16 +379,16 @@
     Charts.hbars($("top-in"), MSL.topParties(scoped, "inAmt", 8), { fmt: money, cls: "fill-a" });
     Charts.hbars($("top-out"), MSL.topParties(scoped, "outAmt", 8), { fmt: money, cls: "fill-b" });
 
-    var L = MSL.latex(scoped);
-    tween($("l-count"), L.count, function (v) { return String(Math.round(v)); });
-    tween($("l-wet"), L.wetKg, function (v) { return MSL.fmtMoney(v, 0) + " kg"; });
-    tween($("l-dry"), L.dryKg, function (v) { return MSL.fmtMoney(v, 0) + " kg"; });
-    $("l-drc").textContent = L.drc === null ? "-" : L.drc.toFixed(1) + "%";
-    $("l-price").textContent = L.avgPrice === null ? "-" : "฿" + MSL.fmtMoney(L.avgPrice, 2);
-    tween($("l-spend"), L.spend, money);
-    Charts.bars($("ch-latex"), lastMonths.map(function (m) { return { label: m.label, v: m.dryKg }; }), {
-      label: "Dry rubber bought per month, in kilograms", cls: "bar-a", name: "Dry rubber",
-      fmt: MSL.fmtShort, fmtFull: function (v) { return MSL.fmtMoney(v, 0) + " kg"; }
+    var G = MSL.moreganic(scoped);
+    tween($("m-count"), G.count, function (v) { return String(Math.round(v)); });
+    tween($("m-total"), G.total, money);
+    tween($("m-avg"), G.avg, money);
+    tween($("m-max"), G.max, money);
+    $("m-last").textContent = G.last || "-";
+    $("m-share").textContent = G.share === null ? "-" : G.share.toFixed(1) + "%";
+    Charts.bars($("ch-mg"), lastMonths.map(function (m) { return { label: m.label, v: m.mg }; }), {
+      label: "Amount paid to Moreganic per month", cls: "bar-b", name: "Paid to Moreganic",
+      fmt: MSL.fmtShort, fmtFull: money
     });
 
     renderTable();

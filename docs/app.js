@@ -11,13 +11,14 @@
   var API = "https://sheets.googleapis.com/v4/spreadsheets/";
   var PAGE_SIZE = 100;
   var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var finePointer = window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   var $ = function (id) { return document.getElementById(id); };
   var token = null;          // in memory only, never stored
   var tokenClient = null;
-  var idleTimer = null;
+  var idleTick = null, lastActivity = 0;
   var allTx = [];
-  var state = { year: "all", planned: false, q: "", sort: "date", dir: "desc", page: 0 };
+  var state = { year: "all", month: null, planned: false, q: "", sort: "date", dir: "desc", page: 0 };
   var loadSeq = 0;
   var io = null;
 
@@ -66,39 +67,95 @@
     });
   }
 
-  var ticking = false;
+  // one shared rAF-throttled scroll handler
+  var scrollTicking = false;
   window.addEventListener("scroll", function () {
-    if (ticking) return;
-    ticking = true;
+    if (scrollTicking) return;
+    scrollTicking = true;
     requestAnimationFrame(function () {
       var h = document.documentElement.scrollHeight - window.innerHeight;
       $("progress").style.transform = "scaleX(" + (h > 0 ? Math.min(1, window.scrollY / h) : 0) + ")";
-      ticking = false;
+      scrollTicking = false;
     });
   }, { passive: true });
 
-  // ---- idle sign-out -----------------------------------------------------
-  function resetIdle() {
-    if (!token) return;
-    clearTimeout(idleTimer);
-    idleTimer = setTimeout(function () { signOut("Signed out after inactivity."); }, (cfg.IDLE_MINUTES || 15) * 60000);
-  }
-  ["click", "keydown", "pointermove", "touchstart", "scroll"].forEach(function (ev) {
-    window.addEventListener(ev, resetIdle, { passive: true });
+  // pause infinite animations while the tab is hidden
+  document.addEventListener("visibilitychange", function () {
+    document.documentElement.classList.toggle("page-hidden", document.hidden);
   });
+
+  // ---- pointer effects (mouse only, never on touch or with reduced motion) -
+  if (finePointer && !reduced) {
+    // spotlight under the cursor on cards
+    var spot = null, spotX = 0, spotY = 0, spotRaf = false;
+    document.addEventListener("pointermove", function (e) {
+      var card = e.target.closest ? e.target.closest(".card") : null;
+      if (!card) return;
+      spot = card; spotX = e.clientX; spotY = e.clientY;
+      if (spotRaf) return;
+      spotRaf = true;
+      requestAnimationFrame(function () {
+        spotRaf = false;
+        var r = spot.getBoundingClientRect();
+        spot.style.setProperty("--mx", (spotX - r.left) + "px");
+        spot.style.setProperty("--my", (spotY - r.top) + "px");
+      });
+    }, { passive: true });
+
+    // tilt on the login illustration
+    var art = $("hero-art"), panel = art.querySelector(".art-panel");
+    art.addEventListener("pointermove", function (e) {
+      var r = art.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width - 0.5, py = (e.clientY - r.top) / r.height - 0.5;
+      requestAnimationFrame(function () {
+        panel.style.setProperty("--ry", (px * 9).toFixed(2) + "deg");
+        panel.style.setProperty("--rx", (-py * 9).toFixed(2) + "deg");
+      });
+    }, { passive: true });
+    art.addEventListener("pointerleave", function () {
+      panel.style.setProperty("--ry", "0deg"); panel.style.setProperty("--rx", "0deg");
+    });
+
+    // magnetic sign-in button
+    var btn = $("signin"), cta = btn.parentNode;
+    cta.addEventListener("pointermove", function (e) {
+      var r = btn.getBoundingClientRect();
+      var dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+      var dist = Math.sqrt(dx * dx + dy * dy);
+      var pull = dist < 140 ? 0.18 : 0;
+      btn.style.setProperty("--tx", (dx * pull).toFixed(1) + "px");
+      btn.style.setProperty("--ty", (dy * pull).toFixed(1) + "px");
+    }, { passive: true });
+    cta.addEventListener("pointerleave", function () {
+      btn.style.setProperty("--tx", "0px"); btn.style.setProperty("--ty", "0px");
+    });
+  }
+
+  // ---- idle sign-out: cheap timestamp on activity, one timer checks it ----
+  function touch() { lastActivity = Date.now(); }
+  ["click", "keydown", "pointermove", "touchstart", "scroll"].forEach(function (ev) {
+    window.addEventListener(ev, touch, { passive: true });
+  });
+  function startIdle() {
+    touch(); clearInterval(idleTick);
+    idleTick = setInterval(function () {
+      if (token && Date.now() - lastActivity > (cfg.IDLE_MINUTES || 15) * 60000) signOut("Signed out after inactivity.");
+    }, 15000);
+  }
 
   // ---- sign in / out -----------------------------------------------------
   function signOut(msg) {
     var t = token;
     token = null; allTx = []; loadSeq++;
-    clearTimeout(idleTimer);
+    clearInterval(idleTick);
     Charts.hideTip();
     $("app").hidden = true; $("login").hidden = false;
     ["signout", "refresh", "updated"].forEach(function (id) { $(id).hidden = true; });
-    $("table").replaceChildren(); $("recent").replaceChildren();
+    $("table").replaceChildren(); $("recent").replaceChildren(); $("stream").replaceChildren();
     ["ch-monthly", "ch-balance", "ch-latex", "top-in", "top-out", "spark"].forEach(function (id) { $(id).replaceChildren(); });
     ["k-bal", "k-in", "k-out", "k-net"].forEach(function (id) { $(id)._v = null; $(id).textContent = "-"; });
-    $("q").value = ""; state.q = ""; state.page = 0;
+    $("q").value = ""; state.q = ""; state.page = 0; state.month = null; state.year = "all";
+    $("error").hidden = true; $("dash").hidden = false;
     resetReveal();
     setStatus(""); setLoginMsg(msg || "");
     if (t && window.google && google.accounts && google.accounts.oauth2) google.accounts.oauth2.revoke(t, function () {});
@@ -112,7 +169,7 @@
     token = resp.access_token;
     $("login").hidden = true; $("app").hidden = false;
     $("signout").hidden = false; $("refresh").hidden = false;
-    setLoginMsg(""); resetIdle(); load();
+    setLoginMsg(""); startIdle(); load();
   }
 
   function initGoogle() {
@@ -140,25 +197,37 @@
       });
   }
 
+  function showError(msg) {
+    $("app").classList.remove("is-loading");
+    $("dash").hidden = true; $("error").hidden = false;
+    $("error-text").textContent = msg;
+    setStatus("");
+    $("updated").classList.remove("busy");
+  }
+
   function load() {
     var seq = ++loadSeq;
-    setStatus("Loading from Google Sheets...");
+    $("error").hidden = true; $("dash").hidden = false;
+    $("app").classList.add("is-loading");
+    $("updated").hidden = false; $("updated").classList.add("busy");
+    $("updated-text").textContent = "Loading from Google Sheets";
+    setStatus("");
     sheetsGet().then(function (data) {
       if (seq !== loadSeq || !token) return;
       var vr = data.valueRanges || [];
       allTx = MSL.parse((vr[0] && vr[0].values) || []);
       var meta = {};
       ((vr[1] && vr[1].values) || []).forEach(function (r) { meta[r[0]] = r[1]; });
-      if (meta.Updated) {
-        var d = new Date(meta.Updated);
-        $("updated-text").textContent = "Data updated " + (isNaN(d) ? meta.Updated : d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }));
-        $("updated").hidden = false;
-      }
+      var d = meta.Updated ? new Date(meta.Updated) : null;
+      $("updated-text").textContent = d && !isNaN(d) ? "Data updated " + d.toLocaleString([], { dateStyle: "medium", timeStyle: "short" }) : "Connected";
+      $("updated").classList.remove("busy");
+      $("app").classList.remove("is-loading");
       buildYears();
       render();
     }).catch(function (e) {
       if (seq !== loadSeq || !token) return;
-      setStatus(e && e.message === "expired" ? "" : (e && e.message) || "Could not load the data.");
+      if (e && e.message === "expired") return;
+      showError((e && e.message) || "Could not load the data.");
     });
   }
 
@@ -170,7 +239,7 @@
       var b = document.createElement("button");
       b.type = "button"; b.textContent = y === "all" ? "All time" : y; b.dataset.year = y;
       b.setAttribute("aria-pressed", String(state.year === y));
-      b.addEventListener("click", function () { state.year = y; state.page = 0; render(); });
+      b.addEventListener("click", function () { state.year = y; state.month = null; state.page = 0; render(); });
       box.appendChild(b);
     });
     requestAnimationFrame(movePill);
@@ -199,7 +268,12 @@
     var ul = $("recent");
     ul.replaceChildren();
     var recent = MSL.sortRows(scoped, "date", "desc").slice(0, 7);
-    if (!recent.length) { var p = document.createElement("li"); p.className = "empty"; p.textContent = "No transactions in this view."; ul.appendChild(p); return; }
+    if (!recent.length) {
+      var p = document.createElement("li"); p.className = "empty";
+      p.textContent = "No transactions in this view. Try All time, or tick Include planned.";
+      ul.appendChild(p); return;
+    }
+    var frag = document.createDocumentFragment();
     recent.forEach(function (t, i) {
       var isIn = t.inAmt > 0 && t.outAmt === 0, li = document.createElement("li");
       li.className = "rc-item " + (isIn ? "rc-in" : "rc-out");
@@ -211,7 +285,48 @@
       txt.appendChild(name); txt.appendChild(sub);
       var amt = document.createElement("span"); amt.className = "rc-amt"; amt.textContent = (isIn ? "+" : "-") + "฿" + MSL.fmtMoney(isIn ? t.inAmt : t.outAmt, 0);
       li.appendChild(ico); li.appendChild(txt); li.appendChild(amt);
-      ul.appendChild(li);
+      frag.appendChild(li);
+    });
+    ul.appendChild(frag);
+  }
+
+  // looping ticker of the newest transactions; the list is doubled for a seamless loop
+  function renderStream(scoped) {
+    var track = $("stream");
+    track.replaceChildren();
+    var items = MSL.sortRows(scoped, "date", "desc").slice(0, 14);
+    if (!items.length) { track.parentNode.hidden = true; return; }
+    track.parentNode.hidden = false;
+    function chips(hidden) {
+      var frag = document.createDocumentFragment();
+      items.forEach(function (t) {
+        var isIn = t.inAmt > 0 && t.outAmt === 0;
+        var c = document.createElement("span"); c.className = "sc " + (isIn ? "in" : "out");
+        if (hidden) c.setAttribute("aria-hidden", "true");
+        c.appendChild(document.createElement("i"));
+        var n = document.createElement("span"); n.textContent = t.party || t.desc || "(no name)";
+        var a = document.createElement("b"); a.textContent = (isIn ? "+" : "-") + MSL.fmtMoney(isIn ? t.inAmt : t.outAmt, 0);
+        c.appendChild(n); c.appendChild(a);
+        frag.appendChild(c);
+      });
+      return frag;
+    }
+    track.appendChild(chips(false)); track.appendChild(chips(true));
+  }
+
+  function pickMonth(key) {
+    state.month = state.month === key ? null : key;
+    state.page = 0;
+    drawMonthly(false);
+    renderTable();
+    if (state.month) $("tx-card").scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+  }
+
+  var lastMonths = [];
+  function drawMonthly(animate) {
+    Charts.groupedBars($("ch-monthly"), lastMonths.map(function (m) { return { key: m.month, label: m.label, a: m.inn, b: m.out }; }), {
+      label: "Money in and money out per month. Select a month to filter the table.", aName: "In", bName: "Out",
+      fmt: MSL.fmtShort, fmtFull: money, onPick: pickMonth, selected: state.month, animate: animate
     });
   }
 
@@ -236,13 +351,12 @@
     $("pct-in").textContent = tot ? pin.toFixed(0) + "%" : "-";
     $("pct-out").textContent = tot ? (100 - pin).toFixed(0) + "%" : "-";
 
-    setStatus(scoped.length ? scoped.length + " transactions in this view" : "No transactions in this view.");
+    setStatus(scoped.length ? scoped.length + " transactions in this view" : "");
 
-    var months = MSL.monthly(scoped);
-    Charts.groupedBars($("ch-monthly"), months.map(function (m) { return { label: m.label, a: m.inn, b: m.out }; }), {
-      label: "Money in and money out per month", aName: "In", bName: "Out", fmt: MSL.fmtShort, fmtFull: money
-    });
+    lastMonths = MSL.monthly(scoped);
+    drawMonthly(true);
     renderRecent(scoped);
+    renderStream(scoped);
     Charts.line($("ch-balance"), series, {
       label: "Account balance over time", fmt: MSL.fmtShort, fmtFull: money,
       dateLabel: function (iso) { return MSL.monthLabel(iso.slice(0, 7)); }
@@ -257,7 +371,7 @@
     $("l-drc").textContent = L.drc === null ? "-" : L.drc.toFixed(1) + "%";
     $("l-price").textContent = L.avgPrice === null ? "-" : "฿" + MSL.fmtMoney(L.avgPrice, 2);
     tween($("l-spend"), L.spend, money);
-    Charts.bars($("ch-latex"), months.map(function (m) { return { label: m.label, v: m.dryKg }; }), {
+    Charts.bars($("ch-latex"), lastMonths.map(function (m) { return { label: m.label, v: m.dryKg }; }), {
       label: "Dry rubber bought per month, in kilograms", cls: "bar-a", name: "Dry rubber",
       fmt: MSL.fmtShort, fmtFull: function (v) { return MSL.fmtMoney(v, 0) + " kg"; }
     });
@@ -273,11 +387,14 @@
   ];
 
   function renderTable() {
-    var list = MSL.filter(allTx, { year: state.year, planned: state.planned, q: state.q });
+    var list = MSL.filter(allTx, { year: state.year, month: state.month, planned: state.planned, q: state.q });
     list = MSL.sortRows(list, state.sort, state.dir);
     var pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
     if (state.page >= pages) state.page = pages - 1;
     var slice = list.slice(state.page * PAGE_SIZE, (state.page + 1) * PAGE_SIZE);
+
+    $("month-chip").hidden = !state.month;
+    if (state.month) $("month-chip-text").textContent = "Showing " + MSL.monthLabel(state.month);
 
     var table = $("table");
     table.replaceChildren();
@@ -297,6 +414,10 @@
       th.appendChild(b); hr.appendChild(th);
     });
     var tb = table.createTBody();
+    if (!slice.length) {
+      var er = tb.insertRow(), ec = er.insertCell();
+      ec.colSpan = COLS.length; ec.className = "empty"; ec.textContent = "No transactions match. Clear the search or the month filter to see more.";
+    }
     slice.forEach(function (t) {
       var tr = tb.insertRow();
       if (t.planned) tr.className = "planned";
@@ -324,11 +445,13 @@
   $("signin").addEventListener("click", function () { setLoginMsg(""); if (tokenClient) tokenClient.requestAccessToken(); });
   $("signout").addEventListener("click", function () { signOut("You have signed out."); });
   $("refresh").addEventListener("click", load);
+  $("retry").addEventListener("click", load);
   $("planned").addEventListener("change", function (e) { state.planned = e.target.checked; state.page = 0; render(); });
+  $("month-chip").addEventListener("click", function () { state.month = null; state.page = 0; drawMonthly(false); renderTable(); });
   var qTimer = null;
   $("q").addEventListener("input", function (e) {
     clearTimeout(qTimer);
-    qTimer = setTimeout(function () { state.q = e.target.value; state.page = 0; renderTable(); }, 150);
+    qTimer = setTimeout(function () { state.q = e.target.value; state.page = 0; renderTable(); }, 160);
   });
   $("prev").addEventListener("click", function () { state.page--; renderTable(); });
   $("next").addEventListener("click", function () { state.page++; renderTable(); });

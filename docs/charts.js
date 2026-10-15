@@ -60,14 +60,15 @@
       svg.appendChild(el("text", { x: L - 8, y: y + 4, "class": "tick", "text-anchor": "end" }, fmt(v)));
     }
   }
-  function grow(node, i) {
+  function grow(node, i, animate) {
+    if (animate === false) return;
     node.setAttribute("class", node.getAttribute("class") + " grow");
     if (!reduced) node.style.animationDelay = Math.min(i * 28, 700) + "ms";
   }
 
   // data: [{label, a, b}]  a = money in, b = money out
   function groupedBars(container, data, o) {
-    var W = 720, H = 300, L = 52, R = 8, T = 12, B = 32;
+    var W = 720, H = 350, L = 52, R = 8, T = 12, B = 32;
     var max = 0;
     data.forEach(function (d) { max = Math.max(max, d.a, d.b); });
     var sc = niceScale(max, 4), iw = W - L - R, ih = H - T - B;
@@ -79,13 +80,14 @@
       [["a", -bw - 1, "bar-a"], ["b", 1, "bar-b"]].forEach(function (s) {
         var val = d[s[0]], h = (val / sc.max) * ih;
         if (val > 0) {
-          var r = el("rect", { x: cx + s[1], y: T + ih - h, width: bw, height: Math.max(h, 1), rx: 3, "class": s[2] });
-          grow(r, i);
+          var r = el("rect", { x: cx + s[1], y: T + ih - h, width: bw, height: Math.max(h, 1), rx: 3,
+            "class": s[2] + (o.selected && d.key !== o.selected ? " dim" : "") });
+          grow(r, i, o.animate);
           svg.appendChild(r);
         }
       });
       if (i % every === 0) svg.appendChild(el("text", { x: cx, y: H - 10, "class": "tick", "text-anchor": "middle" }, d.label));
-      var hit = el("rect", { x: L + gw * i, y: T, width: gw, height: ih, "class": "hit" });
+      var hit = el("rect", { x: L + gw * i, y: T, width: gw, height: ih, "class": "hit" + (o.onPick ? " pick" : "") + (o.selected === d.key ? " sel" : "") });
       function move(e) {
         showTip(e.clientX, e.clientY, d.label, [
           { cls: "a", label: o.aName, value: o.fmtFull(d.a) },
@@ -96,6 +98,12 @@
       hit.addEventListener("pointermove", move);
       hit.addEventListener("pointerdown", move);
       hit.addEventListener("pointerleave", hideTip);
+      if (o.onPick) {
+        hit.setAttribute("role", "button"); hit.setAttribute("tabindex", "0");
+        hit.setAttribute("aria-label", "Filter transactions to " + d.label);
+        hit.addEventListener("click", function () { o.onPick(d.key); });
+        hit.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); o.onPick(d.key); } });
+      }
       svg.appendChild(hit);
     });
     mount(container, svg);
@@ -114,7 +122,7 @@
       var cx = L + gw * i + gw / 2, h = (d.v / sc.max) * ih;
       if (d.v > 0) {
         var r = el("rect", { x: cx - bw / 2, y: T + ih - h, width: bw, height: Math.max(h, 1), rx: 3, "class": o.cls || "bar-a" });
-        grow(r, i);
+        grow(r, i, o.animate);
         svg.appendChild(r);
       }
       if (i % every === 0) svg.appendChild(el("text", { x: cx, y: H - 10, "class": "tick", "text-anchor": "middle" }, d.label));

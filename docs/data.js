@@ -65,6 +65,7 @@
     return tx.filter(function (t) {
       if (!opts.planned && t.planned) return false;
       if (opts.year && opts.year !== "all" && t.year !== opts.year) return false;
+      if (opts.month && t.month !== opts.month) return false;
       if (q && (t.party + " " + t.desc + " " + t.note).toLowerCase().indexOf(q) === -1) return false;
       return true;
     });

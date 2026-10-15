@@ -1,0 +1,10 @@
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"   # only the DSM reverse proxy talks to it
+    env_file: .env
+    volumes:
+      # read-only mount of the folder that holds the .xlsx files
+      - "/volume1/Athena_House/Work/2. My Smart Latex/01. Finance/01. Accounting:/data:ro"

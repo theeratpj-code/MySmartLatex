@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My Smart Latex</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <header>
+    <h1>My Smart Latex</h1>
+    <div id="user" hidden>
+      <span id="email"></span>
+      <button id="signout" type="button">Sign out</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="login">
+      <p>Sign in with your Google account to view the bank transactions.</p>
+      <div id="g-button"></div>
+    </section>
+
+    <section id="app" hidden>
+      <div class="controls">
+        <label>Year
+          <select id="year"></select>
+        </label>
+        <label>Sheet
+          <select id="sheet"></select>
+        </label>
+        <input id="filter" type="search" placeholder="Filter rows…">
+      </div>
+      <p id="status" role="status"></p>
+      <div class="table-wrap"><table id="table"></table></div>
+    </section>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
